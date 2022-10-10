@@ -20,13 +20,15 @@ while 1:
   new_conn = s.accept()
   print(new_conn)
   new_socket = new_conn[0]
-  message = ""
+  message = b''
 
   # inner loop for recieving
   while 1:
-    message += new_socket.recv(4096).decode()
-    if "\r\n\r\n" in message:
+    message += new_socket.recv(4096)
+    if b'\r\n\r\n' in message:
       break
+
+  message = message.decode()
 
   # parse first line
   first = message.split("\r\n")[0]
