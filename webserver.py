@@ -4,15 +4,16 @@
 import os
 import socket, sys
 
-# parse inputs
-port_number = int(sys.argv[1])
-
-# ask OS for a socket
-s = socket.socket()
-
-# bind to port and listen
-s.bind(('', port_number))
-s.listen()
+content_type_map = {'.txt': 'text/plain', '.html': 'text/html'}
+# set up socket to listen on port, exit if port not specified
+try: 
+  port_number = int(sys.argv[1])
+  s = socket.socket()
+  s.bind(('', port_number))
+  s.listen()
+except: 
+  print("need port number input like: $webserver.py PORT")
+  sys.exit(1)
 
 # outer loop for creating connections
 while 1:
@@ -30,21 +31,12 @@ while 1:
   # parse first line
   first = message.split("\r\n")[0]
 
-  # parse request, path, and filename from recieved 
-  request_method = first.split(" ")[0]
-  path_rec = first.split(" ")[1]
-  file_name_rec = os.path.split(path_rec)[-1]
+  # parse request, path, protocol and filename from recieved 
+  request_method, path_rec, protocol_rec= first.split(" ")
 
-  # parse protocol and content extenstion 
-  protocol_rec = first.split(" ")[2]
+  # parse file name and content extenstion
+  file_name_rec = os.path.split(path_rec)[-1] 
   content_extension = os.path.splitext(file_name_rec)[-1]
-
-  # set content type for response
-  # TODO: use a map
-  if content_extension == '.txt':
-    content_type = "text/plain"
-  elif content_extension == '.html':
-    content_type = "text/html"
 
   # read from specified file name, 404 if not found
   try:
@@ -52,7 +44,7 @@ while 1:
       data = fp.read()   # Read entire file
       data = data.encode("ISO-8859-1")
       content_length = len(data)
-      new_socket.sendall("HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}\r\n".format(content_type, content_length, data.decode()).encode())
+      new_socket.sendall("HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}".format(content_type_map[content_extension], content_length, data.decode()).encode())
   except:
     new_socket.sendall("HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\nContent-Length: 13\r\nConnection: close\r\n\r\n404 not found\r\n".encode())
   new_socket.close()
